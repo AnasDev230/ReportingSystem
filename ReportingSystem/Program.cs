@@ -5,6 +5,8 @@ using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using ReportingSystem.Repositories.Interface;
+using ReportingSystem.Repositories.Implementation;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -91,6 +93,7 @@ builder.Services.AddIdentityCore<IdentityUser>().AddRoles<IdentityRole>()
     .AddDefaultTokenProviders();
 
 builder.Services.AddDbContext<SystemDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("SystemConnectionString")));
+builder.Services.AddScoped<ITokenRepository, TokenRepository>();
 var app = builder.Build();
 app.UseCors("AllowNextJs");
 // Configure the HTTP request pipeline.
