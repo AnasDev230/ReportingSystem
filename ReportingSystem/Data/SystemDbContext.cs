@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using ReportingSystem.Models.Domain;
 
 namespace ReportingSystem.Data
 {
@@ -10,6 +11,8 @@ namespace ReportingSystem.Data
         {
             
         }
+        public DbSet<Governorate> Governorates { get; set; }
+        public DbSet<Department> Departments { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
 
@@ -46,7 +49,11 @@ namespace ReportingSystem.Data
     };
             modelBuilder.Entity<IdentityRole>().HasData(Roles);
 
-
+            modelBuilder.Entity<Governorate>()
+                .HasMany(g => g.Departments)
+                .WithOne(d => d.Governorate)
+                .HasForeignKey(d => d.GovernorateId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
 
 

@@ -7,6 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using ReportingSystem.Repositories.Interface;
 using ReportingSystem.Repositories.Implementation;
+using ReportingSystem.Mappings;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -93,7 +94,9 @@ builder.Services.AddIdentityCore<IdentityUser>().AddRoles<IdentityRole>()
     .AddDefaultTokenProviders();
 
 builder.Services.AddDbContext<SystemDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("SystemConnectionString")));
+builder.Services.AddScoped<IGovernorateRepository,GovernorateRepository>();
 builder.Services.AddScoped<ITokenRepository, TokenRepository>();
+builder.Services.AddAutoMapper(typeof(AutoMapperProfiles));
 var app = builder.Build();
 app.UseCors("AllowNextJs");
 // Configure the HTTP request pipeline.
