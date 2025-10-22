@@ -95,6 +95,7 @@ builder.Services.AddIdentityCore<IdentityUser>().AddRoles<IdentityRole>()
 
 builder.Services.AddDbContext<SystemDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("SystemConnectionString")));
 builder.Services.AddScoped<IGovernorateRepository,GovernorateRepository>();
+builder.Services.AddScoped<IDepartmentRepository, DepartmentRepository>();
 builder.Services.AddScoped<ITokenRepository, TokenRepository>();
 builder.Services.AddAutoMapper(typeof(AutoMapperProfiles));
 var app = builder.Build();
