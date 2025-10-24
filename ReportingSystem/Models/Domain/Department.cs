@@ -13,5 +13,6 @@ namespace ReportingSystem.Models.Domain
         public Guid GovernorateId { get; set; }
 
         public Governorate Governorate { get; set; }
+        public ICollection<Employee>? Employees { get; set; }
     }
 }

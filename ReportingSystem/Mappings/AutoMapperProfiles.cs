@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using ReportingSystem.Models.Domain;
 using ReportingSystem.Models.DTO.Department;
+using ReportingSystem.Models.DTO.Employee;
 using ReportingSystem.Models.DTO.Governorate;
 
 namespace ReportingSystem.Mappings
@@ -14,6 +15,12 @@ namespace ReportingSystem.Mappings
             CreateMap<Department, DepartmentDto>().ReverseMap();
             CreateMap<CreateDepartmentRequestDto,Department>().ReverseMap();
             CreateMap<UpdateDepartmentRequestDto, Department>().ReverseMap();
+
+
+
+            CreateMap<Employee, EmployeeDto>().ReverseMap();
+            CreateMap<CreateEmployeeRequestDto, EmployeeDto>().ReverseMap();
+            CreateMap<UpdateEmployeeRequestDto, EmployeeDto>().ReverseMap();
         }
     }
 }

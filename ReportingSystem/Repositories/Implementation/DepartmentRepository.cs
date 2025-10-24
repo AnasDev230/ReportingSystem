@@ -48,7 +48,7 @@ namespace ReportingSystem.Repositories.Implementation
         public async Task<Department?> UpdateAsync(Department department)
         {
             Department existingDepartment = await dbContext.Departments.FindAsync(department.DepartmentId);
-            if (department == null)
+            if (existingDepartment == null)
                 return null;
             dbContext.Entry(existingDepartment).CurrentValues.SetValues(department);
             await dbContext.SaveChangesAsync();

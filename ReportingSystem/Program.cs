@@ -1,4 +1,4 @@
-using ReportingSystem.Data;
+﻿using ReportingSystem.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
@@ -48,18 +48,6 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-builder.Services.Configure<IdentityOptions>(options =>
-{
-    options.Password.RequireDigit = false;
-    options.Password.RequireLowercase = false;
-    options.Password.RequireNonAlphanumeric = false;
-    options.Password.RequireUppercase = false;
-    options.Password.RequiredLength = 6;
-    options.Password.RequiredUniqueChars = 1;
-});
-builder.Services.AddEndpointsApiExplorer();
-
-
 
 
 
@@ -88,16 +76,76 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddIdentityCore<IdentityUser>().AddRoles<IdentityRole>()
-    .AddTokenProvider<DataProtectorTokenProvider<IdentityUser>>("ReportingSystem")
-    .AddEntityFrameworkStores<SystemDbContext>()
-    .AddDefaultTokenProviders();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 builder.Services.AddDbContext<SystemDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("SystemConnectionString")));
 builder.Services.AddScoped<IGovernorateRepository,GovernorateRepository>();
 builder.Services.AddScoped<IDepartmentRepository, DepartmentRepository>();
+builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
 builder.Services.AddScoped<ITokenRepository, TokenRepository>();
 builder.Services.AddAutoMapper(typeof(AutoMapperProfiles));
+
+
+
+
+
+
+
+
+builder.Services.AddIdentityCore<IdentityUser>(options =>
+{
+
+
+    options.User.AllowedUserNameCharacters =
+        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+ ";
+
+
+    for (char c = '\u0621'; c <= '\u064A'; c++)
+        options.User.AllowedUserNameCharacters += c;
+
+
+    options.User.AllowedUserNameCharacters += "\u0622\u0623\u0625\u0649";
+
+    options.User.RequireUniqueEmail = true;
+
+
+    options.Password.RequireDigit = false;
+    options.Password.RequireLowercase = false;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequireUppercase = false;
+    options.Password.RequiredLength = 6;
+    options.Password.RequiredUniqueChars = 1;
+})
+.AddRoles<IdentityRole>()
+.AddEntityFrameworkStores<SystemDbContext>()
+.AddDefaultTokenProviders();
+
+
+
+
+
+
+
+
+
+
+
 var app = builder.Build();
 app.UseCors("AllowNextJs");
 // Configure the HTTP request pipeline.
