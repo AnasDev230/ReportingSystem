@@ -14,6 +14,8 @@ namespace ReportingSystem.Data
         public DbSet<Governorate> Governorates { get; set; }
         public DbSet<Department> Departments { get; set; }
         public DbSet<Employee> Employees { get; set; }
+        public DbSet<ReportType> ReportTypes { get; set; }
+        public DbSet<Report> Reports { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
 
@@ -54,6 +56,13 @@ namespace ReportingSystem.Data
                 .HasMany(g => g.Departments)
                 .WithOne(d => d.Governorate)
                 .HasForeignKey(d => d.GovernorateId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+
+            modelBuilder.Entity<Report>()
+                .HasOne(r => r.ReportType)
+                .WithMany(rt => rt.Reports)
+                .HasForeignKey(r => r.ReportTypeId)
                 .OnDelete(DeleteBehavior.Restrict);
         }
 

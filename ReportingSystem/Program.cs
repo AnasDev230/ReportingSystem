@@ -79,21 +79,6 @@ builder.Services.AddCors(options =>
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 builder.Services.AddDbContext<SystemDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("SystemConnectionString")));
 builder.Services.AddScoped<IGovernorateRepository,GovernorateRepository>();
 builder.Services.AddScoped<IDepartmentRepository, DepartmentRepository>();
