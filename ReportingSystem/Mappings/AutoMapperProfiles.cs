@@ -3,6 +3,7 @@ using ReportingSystem.Models.Domain;
 using ReportingSystem.Models.DTO.Department;
 using ReportingSystem.Models.DTO.Employee;
 using ReportingSystem.Models.DTO.Governorate;
+using ReportingSystem.Models.DTO.Report;
 using ReportingSystem.Models.DTO.ReportType;
 
 namespace ReportingSystem.Mappings
@@ -27,6 +28,10 @@ namespace ReportingSystem.Mappings
             CreateMap<ReportType, ReportTypeDto>().ReverseMap();
             CreateMap<CreateReportTypeRequestDto, ReportType>().ReverseMap();
             CreateMap<UpdateReportTypeRequestDto, ReportType>().ReverseMap();
+
+            CreateMap<Report, ReportDto>().ReverseMap();
+            CreateMap<CreateReportRequestDto, Report>().ReverseMap();
+            CreateMap<UpdateReportRequestDto, Report>().ReverseMap();
         }
     }
 }

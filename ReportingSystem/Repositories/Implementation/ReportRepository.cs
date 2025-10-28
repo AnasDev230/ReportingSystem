@@ -2,6 +2,7 @@
 using ReportingSystem.Data;
 using ReportingSystem.Models.Domain;
 using ReportingSystem.Repositories.Interface;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace ReportingSystem.Repositories.Implementation
 {
@@ -13,6 +14,29 @@ namespace ReportingSystem.Repositories.Implementation
         {
             this.dbContext = dbContext;
         }
+
+        public async Task<ReportUpdate> AddReportUpdateAsync(Guid reportId, Guid employeeId, string newStatus, string? comment = null)
+        {
+            var report = await dbContext.Reports.FindAsync(reportId);
+            if (report == null)
+                throw new Exception("Report not found");
+
+
+            report.Status = newStatus;
+            report.UpdatedAt = DateTime.Now;
+
+            var reportUpdate = new ReportUpdate
+            {
+                ReportId = reportId,
+                EmployeeId = employeeId,
+                Status = newStatus,
+                Comment = comment,
+            };
+            await dbContext.ReportUpdates.AddAsync(reportUpdate);
+            await dbContext.SaveChangesAsync();
+            return reportUpdate;
+        }
+
         public async Task<Report> CreateAsync(Report report)
         {
             await dbContext.Reports.AddAsync(report);
@@ -88,6 +112,15 @@ namespace ReportingSystem.Repositories.Implementation
                 .Where(r => r.UserId == userId)
                 .ToListAsync();
         }
+
+        public async Task<IEnumerable<Report>> GetReportsForEmployeeAsync(string userId)
+        {
+          var employee=await dbContext.Employees.FirstOrDefaultAsync(r => r.UserId == userId);
+            if (employee == null)
+                return Enumerable.Empty<Report>();
+            return await dbContext.Reports.Include(r => r.ReportType).Where(x => x.ReportType.DepartmentId == employee.DepartmentId).ToListAsync();
+        }
+
         public async Task<Report?> UpdateAsync(Report report)
         {
             var existingReport = await dbContext.Reports.FindAsync(report.ReportId);
@@ -98,5 +131,6 @@ namespace ReportingSystem.Repositories.Implementation
             await dbContext.SaveChangesAsync();
             return existingReport;
         }
+
     }
 }

@@ -9,5 +9,6 @@ namespace ReportingSystem.Models.Domain
         public IdentityUser User { get; set; }
         public Guid DepartmentId { get; set; }
         public Department Department { get; set; }
+        public ICollection<ReportUpdate> ReportUpdates { get; set; }
     }
 }

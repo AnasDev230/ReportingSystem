@@ -12,8 +12,7 @@
         public DateTime CreatedAt { get; set; }
 
         public Guid ReportTypeId { get; set; }
-        public string? ReportTypeName { get; set; }
-
+        
         public Guid GovernorateId { get; set; }
         public string? GovernorateName { get; set; }
 
