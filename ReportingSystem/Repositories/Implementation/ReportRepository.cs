@@ -1,0 +1,102 @@
+﻿using Microsoft.EntityFrameworkCore;
+using ReportingSystem.Data;
+using ReportingSystem.Models.Domain;
+using ReportingSystem.Repositories.Interface;
+
+namespace ReportingSystem.Repositories.Implementation
+{
+    public class ReportRepository : IReportRepository
+    {
+        private readonly SystemDbContext dbContext;
+
+        public ReportRepository(SystemDbContext dbContext)
+        {
+            this.dbContext = dbContext;
+        }
+        public async Task<Report> CreateAsync(Report report)
+        {
+            await dbContext.Reports.AddAsync(report);
+            await dbContext.SaveChangesAsync();
+            return report;
+        }
+
+        public async Task<bool> DeleteAsync(Guid reportId)
+        {
+            var existingReport = await dbContext.Reports.FindAsync(reportId);
+            if (existingReport == null)
+                return false;
+
+            dbContext.Reports.Remove(existingReport);
+            await dbContext.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<IEnumerable<Report>> GetAllAsync()
+        {
+            return await dbContext.Reports
+                .Include(r => r.ReportType)
+                .Include(r => r.Governorate)
+                .Include(r => r.ReportType.Department)
+                .Include(r => r.User)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Report>> GetByDepartmentIdAsync(Guid departmentId)
+        {
+            return await dbContext.Reports
+                .Include(r => r.ReportType)
+                .Include(r => r.Governorate)
+                .Include(r => r.User)
+                .Where(r => r.ReportType.DepartmentId == departmentId)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Report>> GetByGovernorateIdAsync(Guid governorateId)
+        {
+            return await dbContext.Reports
+                .Include(r => r.ReportType)
+                .Include(r => r.ReportType.Department)
+                .Include(r => r.User)
+                .Where(r => r.GovernorateId == governorateId)
+                .ToListAsync();
+        }
+        public async Task<Report?> GetByIdAsync(Guid reportId)
+        {
+            return await dbContext.Reports
+                .Include(r => r.ReportType)
+                .Include(r => r.Governorate)
+                .Include(r => r.ReportType.Department)
+                .Include(r => r.User)
+                .FirstOrDefaultAsync(r => r.ReportId == reportId);
+        }
+
+        public async Task<IEnumerable<Report>> GetByReportTypeIdAsync(Guid reportTypeId)
+        {
+            return await dbContext.Reports
+                .Include(r => r.Governorate)
+                .Include(r => r.ReportType.Department)
+                .Include(r => r.User)
+                .Where(r => r.ReportTypeId == reportTypeId)
+                .ToListAsync();
+        }
+        public async Task<IEnumerable<Report>> GetByUserIdAsync(string userId)
+        {
+            return await dbContext.Reports
+                .Include(r => r.ReportType)
+                .Include(r => r.Governorate)
+                .Include(r => r.ReportType.Department)
+                .Where(r => r.UserId == userId)
+                .ToListAsync();
+        }
+        public async Task<Report?> UpdateAsync(Report report)
+        {
+            var existingReport = await dbContext.Reports.FindAsync(report.ReportId);
+            if (existingReport == null)
+                return null;
+
+            dbContext.Entry(existingReport).CurrentValues.SetValues(report);
+            await dbContext.SaveChangesAsync();
+            return existingReport;
+        }
+    }
+}
