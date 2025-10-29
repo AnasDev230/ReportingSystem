@@ -20,5 +20,6 @@ namespace ReportingSystem.Models.Domain
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public ICollection<ReportUpdate> ReportUpdates { get; set; }
+        public ICollection<Image> Images { get; set; }=new List<Image>();
     }
 }

@@ -17,6 +17,8 @@ namespace ReportingSystem.Data
         public DbSet<ReportType> ReportTypes { get; set; }
         public DbSet<Report> Reports { get; set; }
         public DbSet<ReportUpdate> ReportUpdates { get; set; }
+        public DbSet<Image> Images { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
 
