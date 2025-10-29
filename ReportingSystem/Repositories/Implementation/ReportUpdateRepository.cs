@@ -13,38 +13,72 @@ namespace ReportingSystem.Repositories.Implementation
         {
             this.dbContext = dbContext;
         }
-        public async Task<IEnumerable<ReportUpdate>> GetAllAsync()
+        public async Task<IEnumerable<object>> GetAllAsync()
         {
             return await dbContext.ReportUpdates
-                .Include(r => r.Employee)
-                .Include(r => r.Report)
                 .OrderByDescending(r => r.CreatedAt)
+                .Select(r => new
+                {
+                    ReportUpdateId = r.ReportUpdateId,
+                    ReportId = r.ReportId,
+                    Status = r.Status,
+                    Comment = r.Comment,
+                    CreatedAt = r.CreatedAt,
+                    EmployeeName = r.Employee.User.UserName
+                })
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<ReportUpdate>> GetByEmployeeIdAsync(Guid employeeId)
+        public async Task<IEnumerable<object>> GetByEmployeeIdAsync(Guid employeeId)
         {
             return await dbContext.ReportUpdates
-                .Include(r => r.Report)
                 .Where(r => r.EmployeeId == employeeId)
                 .OrderByDescending(r => r.CreatedAt)
+                .Select(r => new
+                {
+                    ReportUpdateId = r.ReportUpdateId,
+                    ReportId = r.ReportId,
+                    Status = r.Status,
+                    Comment = r.Comment,
+                    CreatedAt = r.CreatedAt,
+                    EmployeeName = r.Employee.User.UserName
+                }
+                )
                 .ToListAsync();
         }
 
-        public async Task<ReportUpdate?> GetByIdAsync(Guid id)
+        public async Task<object?> GetByIdAsync(Guid id)
         {
-            return await dbContext.ReportUpdates
-                .Include(r => r.Employee)
-                .Include(r => r.Report)
-                .FirstOrDefaultAsync(r => r.ReportUpdateId == id);
+            return await dbContext.ReportUpdates.Where(u=>u.ReportUpdateId == id)
+                .Select(r => new
+                {
+                    ReportUpdateId = r.ReportUpdateId,
+                    ReportId = r.ReportId,
+                    Status = r.Status,
+                    Comment = r.Comment,
+                    CreatedAt = r.CreatedAt,
+                    EmployeeName = r.Employee.User.UserName
+                }
+                ).ToListAsync();
+                
+                
         }
 
-        public async Task<IEnumerable<ReportUpdate>> GetByReportIdAsync(Guid reportId)
+        public async Task<IEnumerable<object>> GetByReportIdAsync(Guid reportId)
         {
             return await dbContext.ReportUpdates
-                .Include(r => r.Employee)
                 .Where(r => r.ReportId == reportId)
                 .OrderByDescending(r => r.CreatedAt)
+                .Select(r => new
+                {
+                    ReportUpdateId = r.ReportUpdateId,
+                    ReportId = r.ReportId,
+                    Status = r.Status,
+                    Comment = r.Comment,
+                    CreatedAt = r.CreatedAt,
+                    EmployeeName = r.Employee.User.UserName
+                }
+                )
                 .ToListAsync();
         }
     }
