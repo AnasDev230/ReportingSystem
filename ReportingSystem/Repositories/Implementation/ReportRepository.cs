@@ -113,12 +113,31 @@ namespace ReportingSystem.Repositories.Implementation
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<Report>> GetReportsForEmployeeAsync(string userId)
+        public async Task<IEnumerable<object>> GetReportsForEmployeeAsync(string userId)
         {
-          var employee=await dbContext.Employees.FirstOrDefaultAsync(r => r.UserId == userId);
+            var employee = await dbContext.Employees.FirstOrDefaultAsync(r => r.UserId == userId);
             if (employee == null)
                 return Enumerable.Empty<Report>();
-            return await dbContext.Reports.Include(r => r.ReportType).Where(x => x.ReportType.DepartmentId == employee.DepartmentId).ToListAsync();
+
+
+            var reports= await dbContext.Reports.Where(x => x.ReportType.DepartmentId == employee.DepartmentId)
+                .Select(r => new
+                {
+                    r.ReportId,
+                    r.Title,
+                    r.Description,
+                    r.Status,
+                    r.CreatedAt,
+                    r.Longitude,
+                    r.Latitude,
+                    r.Address,
+                    ReportTypeName = r.ReportType.ReportTypeName,
+                    UserPhone = r.User.PhoneNumber,
+                    UserName=r.User.UserName
+                }).ToListAsync();
+
+
+            return reports;
         }
 
         public async Task<Report?> UpdateAsync(Report report)

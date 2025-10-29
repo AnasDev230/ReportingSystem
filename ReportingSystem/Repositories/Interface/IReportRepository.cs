@@ -16,7 +16,7 @@ namespace ReportingSystem.Repositories.Interface
 
         //Report Updates
 
-        Task<IEnumerable<Report>> GetReportsForEmployeeAsync(string userId);
+        Task<IEnumerable<object>> GetReportsForEmployeeAsync(string userId);
         Task<ReportUpdate> AddReportUpdateAsync(Guid reportId, Guid employeeId, string newStatus, string? comment = null);
     }
 }

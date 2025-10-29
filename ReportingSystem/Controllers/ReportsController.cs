@@ -1,5 +1,7 @@
-﻿using System.Security.Claims;
+﻿using System;
+using System.Security.Claims;
 using AutoMapper;
+using Azure.Core;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -76,7 +78,30 @@ namespace ReportingSystem.Controllers
                 return NotFound(); 
             return Ok(mapper.Map<List<ReportDto>>(reports));
         }
+
+
+        [HttpGet("GetReportsByUserId/{UserId}")]
+        public async Task<IActionResult> GetReportsByUserId([FromRoute] string UserId)
+        {
+            var reports = await reportRepository.GetByUserIdAsync(UserId);
+            if (reports == null)
+                return NotFound();
+            return Ok(mapper.Map<List<ReportDto>>(reports));
+        }
+
+
+
+
+
+
+
+
+
+
+
+
         [HttpPut("{ReportId}")]
+        [Authorize(Roles ="User,Employee")]
         public async Task<IActionResult> UpdateReport([FromRoute] Guid ReportId,[FromBody] UpdateReportRequestDto request)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -85,31 +110,45 @@ namespace ReportingSystem.Controllers
             Report report=await reportRepository.GetByIdAsync(ReportId);
             if (report==null)
                 return NotFound();
-            if (report.Status != "Pending")
-            {
-                return BadRequest();
-            }
             mapper.Map(request, report);
-            report.UserId = userId;
+            if (User.IsInRole("User"))
+            {
+
+                if (report.Status != "Pending")
+                {
+                    return BadRequest("You cannot update this report because its status is not Pending.");
+                }
+                if (report.UserId != userId)
+                    return Unauthorized("You cannot update this report because it does not belong to you");
+
+            }
+
             report=await reportRepository.UpdateAsync(report);
             return Ok(mapper.Map<ReportDto>(report));
         }
         [HttpDelete("{ReportId}")]
+        [Authorize(Roles ="User,Employee")]
         public async Task<IActionResult> DeleteReport([FromRoute]Guid ReportId)
         {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (String.IsNullOrEmpty(userId))
+                return Unauthorized();
+
             Report report=await reportRepository.GetByIdAsync(ReportId);
             if(report==null)
                 return NotFound();
-            if(await reportRepository.DeleteAsync(ReportId))
+
+            if (User.IsInRole("User"))
+            {
+                if (!string.Equals(report.Status, "Pending", StringComparison.OrdinalIgnoreCase))
+                    return BadRequest("You cannot delete this report because its status is not Pending.");
+            }
+            
+            if (await reportRepository.DeleteAsync(ReportId))
                 return Ok();
-            return BadRequest();
+            return BadRequest("Failed to delete report.");
 
         }
-
-
-
-        
-
 
 
         [HttpGet("GetReportsForEmployee")]
@@ -122,10 +161,9 @@ namespace ReportingSystem.Controllers
                 return Unauthorized();
             
             var reports=await reportRepository.GetReportsForEmployeeAsync(userId);
-
-            return Ok(mapper.Map<List<ReportDto>>(reports));
+            return Ok(reports);
         }
-
+        
 
 
 
@@ -144,15 +182,89 @@ namespace ReportingSystem.Controllers
             var allowedStatuses = new List<string>
               {
           "Pending",
+        "UnderReview",
         "In-Progress",
         "Completed",
         "Rejected"
     };
-            if (!allowedStatuses.Contains(request.NewStatus))
+
+
+
+
+            var report = await reportRepository.GetByIdAsync(reportId);
+            if (report == null)
+                return NotFound("Report not found.");
+
+            var currentStatus=report.Status;
+
+
+            if (!allowedStatuses.Contains(currentStatus))
             {
                 return BadRequest("Invalid status value");
             }
-            var reportUpdate=await reportRepository.AddReportUpdateAsync(reportId,employee.EmployeeId,request.NewStatus,request.Comment);
+
+
+
+
+
+            if (currentStatus == "Completed" || currentStatus == "Rejected")
+                return BadRequest("This report cannot be updated anymore.");
+
+
+
+
+
+
+
+            var newStatus = "";
+
+            if (currentStatus == "Pending")
+                newStatus = "UnderReview";
+            if (currentStatus == "UnderReview")
+                newStatus = "In-Progress";
+            if (currentStatus == "In-Progress")
+                newStatus = "Completed";
+
+            var reportUpdate =await reportRepository.AddReportUpdateAsync(reportId,employee.EmployeeId,newStatus,request.Comment);
+            return Ok(new
+            {
+                reportUpdate.ReportId,
+                reportUpdate.Status
+            });
+
+
+        }
+
+
+
+        [HttpPost("RejectReport/{reportId}")]
+        [Authorize(Roles = "Employee")]
+        public async Task<IActionResult> RejectReport([FromRoute] Guid reportId, [FromBody] UpdateReportStatusRequestDto request)
+        {
+
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized();
+            var employee = await employeeRepository.GetByUserIDAsync(userId);
+            if (employee == null)
+                return NotFound("Employee Not Found!!");
+
+
+            var report = await reportRepository.GetByIdAsync(reportId);
+            if (report == null)
+                return NotFound("Report not found.");
+
+
+
+
+            var currentStatus = report.Status;
+            if (currentStatus == "Rejected" || currentStatus == "Completed" || currentStatus=="In-Progress")
+                return BadRequest("This report cannot be rejected anymore.");
+
+
+            var reportUpdate = await reportRepository.AddReportUpdateAsync(reportId, employee.EmployeeId, "Rejected", request.Comment);
+
             return Ok(new
             {
                 reportUpdate.ReportId,
@@ -160,5 +272,9 @@ namespace ReportingSystem.Controllers
             });
         }
 
-    }
+
+
+
+
+        }
 }
