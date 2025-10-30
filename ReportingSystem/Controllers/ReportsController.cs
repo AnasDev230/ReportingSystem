@@ -18,12 +18,14 @@ namespace ReportingSystem.Controllers
         private readonly IReportRepository reportRepository;
         private readonly IMapper mapper;
         private readonly IEmployeeRepository employeeRepository;
+        private readonly IDepartmentRepository departmentRepository;
 
-        public ReportsController(IReportRepository reportRepository, IMapper mapper,IEmployeeRepository employeeRepository)
+        public ReportsController(IReportRepository reportRepository, IMapper mapper,IEmployeeRepository employeeRepository,IDepartmentRepository departmentRepository)
         {
             this.reportRepository = reportRepository;
             this.mapper = mapper;
             this.employeeRepository = employeeRepository;
+            this.departmentRepository = departmentRepository;
         }
         [HttpPost]
         [Authorize(Roles = "User")]
@@ -39,6 +41,7 @@ namespace ReportingSystem.Controllers
             return Created("",mapper.Map<ReportDto>(report));
         }
         [HttpGet]
+        //[Authorize(Roles = "No Roles For Now")]
         public async Task<IActionResult> GetAllReports()
         {
             var reports = await reportRepository.GetAllAsync();
@@ -46,6 +49,7 @@ namespace ReportingSystem.Controllers
             return Ok(reportsDto);
         }
         [HttpGet("{ReportId}")]
+        [Authorize(Roles = "Admin,Employee,User")]
         public async Task<IActionResult> GetReportById([FromRoute] Guid ReportId)
         {
             Report report= await reportRepository.GetByIdAsync(ReportId);
@@ -55,6 +59,7 @@ namespace ReportingSystem.Controllers
         }
 
         [HttpGet("GetReportsByGovernorateId/{GovernorateId}")]
+        [Authorize(Roles = "No Roles For Now")]
         public async Task<IActionResult> GetReportsByGovernorateId([FromRoute] Guid GovernorateId)
         {
             var reports=await reportRepository.GetByGovernorateIdAsync(GovernorateId);
@@ -63,16 +68,58 @@ namespace ReportingSystem.Controllers
             return Ok(mapper.Map<List<ReportDto>>(reports));
         }
         [HttpGet("GetReportsByDepartmentId/{DepartmentId}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetReportsByDepartmentId([FromRoute] Guid DepartmentId)
         {
+            var userID = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userID == null)
+                return Unauthorized();
+
+
+
+            var admin = await employeeRepository.GetByUserIDAsync(userID);
+            if (admin == null)
+                return Unauthorized();
+
+
+
+
+            if (admin.DepartmentId != DepartmentId)
+                return Unauthorized("Admins can only perform actions on their own department.");
+
+
+
+
+
             var reports = await reportRepository.GetByDepartmentIdAsync(DepartmentId);
             if (reports == null)
                 return NotFound();
             return Ok(mapper.Map<List<ReportDto>>(reports));
         }
         [HttpGet("GetReportsByReportTypeId/{ReportTypeId}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetReportsByReportTypeId([FromRoute] Guid ReportTypeId)
         {
+
+            var userID = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userID == null)
+                return Unauthorized();
+
+
+
+            var admin = await employeeRepository.GetByUserIDAsync(userID);
+            if (admin == null)
+                return Unauthorized();
+
+            var department=await departmentRepository.GetByReportTypeIdAsync(ReportTypeId);
+
+
+            if (admin.DepartmentId != department.DepartmentId)
+                return BadRequest("Admins can only perform actions on their own department.");
+
+
+
+
             var reports = await reportRepository.GetByReportTypeIdAsync(ReportTypeId);
             if (reports == null)
                 return NotFound(); 
@@ -81,8 +128,11 @@ namespace ReportingSystem.Controllers
 
 
         [HttpGet("GetReportsByUserId/{UserId}")]
+        [Authorize(Roles = "No Roles For Now")]
         public async Task<IActionResult> GetReportsByUserId([FromRoute] string UserId)
         {
+
+
             var reports = await reportRepository.GetByUserIdAsync(UserId);
             if (reports == null)
                 return NotFound();
@@ -126,6 +176,9 @@ namespace ReportingSystem.Controllers
             report=await reportRepository.UpdateAsync(report);
             return Ok(mapper.Map<ReportDto>(report));
         }
+
+
+
         [HttpDelete("{ReportId}")]
         [Authorize(Roles ="User,Employee")]
         public async Task<IActionResult> DeleteReport([FromRoute]Guid ReportId)
@@ -153,7 +206,6 @@ namespace ReportingSystem.Controllers
 
         [HttpGet("GetReportsForEmployee")]
         [Authorize(Roles = "Employee")]
-
         public async Task<IActionResult> GetReportsForEmployee()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -194,6 +246,18 @@ namespace ReportingSystem.Controllers
             var report = await reportRepository.GetByIdAsync(reportId);
             if (report == null)
                 return NotFound("Report not found.");
+
+
+
+            if(employee.DepartmentId!=report.ReportType.DepartmentId)
+                return Unauthorized("Employees can only perform actions on their own department.");
+
+
+
+
+
+
+
 
             var currentStatus=report.Status;
 
@@ -255,7 +319,8 @@ namespace ReportingSystem.Controllers
             if (report == null)
                 return NotFound("Report not found.");
 
-
+            if (employee.DepartmentId != report.ReportType.DepartmentId)
+                return Unauthorized("Employees can only perform actions on their own department.");
 
 
             var currentStatus = report.Status;

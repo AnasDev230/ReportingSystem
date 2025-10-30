@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using ReportingSystem.Models.Domain;
@@ -21,6 +22,7 @@ namespace ReportingSystem.Controllers
         }
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
+        [Authorize(Roles ="Admin")]
         public async Task<IActionResult> CreateDepartment([FromBody] CreateDepartmentRequestDto request)
         {
             Department department=mapper.Map<Department>(request);
@@ -38,6 +40,7 @@ namespace ReportingSystem.Controllers
         [HttpGet("GetByGovernorateId/{governorateId}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+
         public async Task<IActionResult> GetAllDepartmentsByGovernorateId([FromRoute] Guid governorateId)
         {
             var departments = await departmentRepository.GetAllByGovernorateIdAsync(governorateId);
@@ -59,6 +62,7 @@ namespace ReportingSystem.Controllers
         [HttpPut("{Id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateDepartment([FromRoute] Guid Id,UpdateDepartmentRequestDto request)
         {
             var department=await departmentRepository.GetByID(Id);
@@ -72,6 +76,7 @@ namespace ReportingSystem.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteDepartment([FromRoute] Guid Id)
         {
             var department = await departmentRepository.GetByID(Id);

@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using ReportingSystem.Models.Domain;
@@ -20,7 +21,7 @@ namespace ReportingSystem.Controllers
             this.mapper = mapper;
         }
         [HttpPost]
-        
+        [Authorize(Roles ="Admin")]
         public async Task<IActionResult> CreateReportType([FromBody] CreateReportTypeRequestDto request)
         {
             ReportType reportType = mapper.Map<ReportType>(request);
@@ -28,21 +29,25 @@ namespace ReportingSystem.Controllers
             return Created("",mapper.Map<ReportTypeDto>(reportType));
         }
         [HttpGet]
+        [Authorize(Roles ="No Roles For Now")]
         public async Task<IActionResult> GetAllReportTypes()
         {
             return Ok(mapper.Map<List<ReportTypeDto>>(await reportTypeRepository.GetAllAsync()));
         }
         [HttpGet("Departments/{departmentId}")]
+        [Authorize(Roles = "Admin,Employee,User")]
         public async Task<IActionResult> GetAllReportTypesByDepartmentId([FromRoute] Guid departmentId)
         {
             return Ok(mapper.Map<List<ReportTypeDto>>(await reportTypeRepository.GetByDepartmentIdAsync(departmentId)));
         }
         [HttpGet("Governorates/{governorateId}")]
+        [Authorize(Roles = "Admin,Employee,User")]
         public async Task<IActionResult> GetAllReportTypesByGovernorateId([FromRoute] Guid governorateId)
         {
             return Ok(mapper.Map<List<ReportTypeDto>>(await reportTypeRepository.GetByGovernorateIdAsync(governorateId)));
         }
         [HttpGet("{Id}")]
+        [Authorize(Roles = "Admin,Employee,User")]
         public async Task<IActionResult> GetById([FromRoute] Guid Id)
         {
             ReportType reportType=await reportTypeRepository.GetByIdAsync(Id);
@@ -51,6 +56,7 @@ namespace ReportingSystem.Controllers
             return Ok(mapper.Map<ReportTypeDto>(reportType));
         }
         [HttpPut("{Id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateReportType([FromRoute]Guid Id,[FromBody] UpdateReportTypeRequestDto request)
         {
             ReportType reportType = await reportTypeRepository.GetByIdAsync(Id);
@@ -62,6 +68,7 @@ namespace ReportingSystem.Controllers
         }
 
         [HttpDelete("{Id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteReportType([FromRoute] Guid Id)
         {
             ReportType reportType = await reportTypeRepository.GetByIdAsync(Id);

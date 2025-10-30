@@ -8,12 +8,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ReportingSystem.Controllers
 {
-    public class AuthController : Controller
+    public class UsersController : Controller
     {
         private readonly UserManager<IdentityUser> userManager;
         private readonly ITokenRepository tokenRepository;
 
-        public AuthController(UserManager<IdentityUser> userManager, ITokenRepository tokenRepository)
+        public UsersController(UserManager<IdentityUser> userManager, ITokenRepository tokenRepository)
         {
             this.userManager = userManager;
             this.tokenRepository = tokenRepository;
@@ -38,8 +38,8 @@ namespace ReportingSystem.Controllers
             var identityResult = await userManager.CreateAsync(identityUser, request.Password);
             if (identityResult.Succeeded)
             {
-                if (request.Roles is not null && request.Roles.Any())
-                    identityResult = await userManager.AddToRolesAsync(identityUser, request.Roles);
+                
+                    identityResult = await userManager.AddToRolesAsync(identityUser, ["User"]);
                 if (identityResult.Succeeded)
                 {
                     return Ok("User Registered Successfully, pls Login");

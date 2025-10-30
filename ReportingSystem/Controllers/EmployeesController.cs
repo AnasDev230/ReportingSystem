@@ -1,5 +1,6 @@
 ﻿using System.Security.Claims;
 using AutoMapper;
+using Azure.Core;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -27,13 +28,28 @@ namespace ReportingSystem.Controllers
             this.userManager = userManager;
             this.tokenRepository = tokenRepository;
         }
-        [HttpPost]
+        [HttpPost("CreateEmployee")]
+        [Authorize(Roles ="Admin")]
         public async Task<IActionResult> CreateEmployee([FromBody] CreateEmployeeRequestDto request)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
+
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (String.IsNullOrEmpty(userId))
+                return Unauthorized();
+
+            var admin= await employeeRepository.GetByUserIDAsync(userId);
+            if (admin == null)
+                return Unauthorized();
+
+            if(admin.DepartmentId !=request.DepartmentId)
+                return BadRequest("Admins can only perform actions on their own department.");
+            
+
             var identityUser = new IdentityUser
             {
                 UserName = request.Username,
@@ -52,6 +68,42 @@ namespace ReportingSystem.Controllers
                         DepartmentId=request.DepartmentId,
                     };
                     employee=await employeeRepository.CreateAsync(employee);
+                    return Created("User Registered Successfully, pls Login", mapper.Map<EmployeeDto>(employee));
+                }
+            }
+            return BadRequest(identityResult.Errors);
+
+
+        }
+
+
+
+        [HttpPost("CreateAdmin")]
+        //[Authorize(Roles = "Admin")]
+        public async Task<IActionResult> CreateAdmin([FromBody] CreateEmployeeRequestDto request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+            var identityUser = new IdentityUser
+            {
+                UserName = request.Username,
+                Email = request.Email,
+                PhoneNumber = NormalizeToLocalSyrianPhone(request.PhoneNumber),
+            };
+            var identityResult = await userManager.CreateAsync(identityUser, request.Password);
+            if (identityResult.Succeeded)
+            {
+                identityResult = await userManager.AddToRolesAsync(identityUser, ["Admin"]);
+                if (identityResult.Succeeded)
+                {
+                    var employee = new Employee
+                    {
+                        UserId = identityUser.Id,
+                        DepartmentId = request.DepartmentId,
+                    };
+                    employee = await employeeRepository.CreateAsync(employee);
                     return Created("User Registered Successfully, pls Login", mapper.Map<EmployeeDto>(employee));
                 }
             }
@@ -96,7 +148,7 @@ namespace ReportingSystem.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [HttpGet("Profile")]
-        [Authorize(Roles = "Employee")]
+        [Authorize(Roles = "Employee,Admin")]
         public async Task<IActionResult> GetProfile()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -121,37 +173,80 @@ namespace ReportingSystem.Controllers
             });
         }
 
-        [HttpDelete("DeleteAccount")]
+        [HttpDelete("DeleteEmployee/{employeeId}")]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        //[Authorize(Roles = "User")]
-        public async Task<IActionResult> Delete()
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> DeleteEmployee([FromRoute] Guid employeeId)
         {
             var userID = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userID == null)
                 return Unauthorized();
-            var identityUser = await userManager.FindByIdAsync(userID);
-            if (identityUser == null)
-                return BadRequest("Something Went Wrong!");
-            await userManager.DeleteAsync(identityUser);
+
+
+
+            var employee = await employeeRepository.GetByIDAsync(employeeId);
+            if (employee == null)
+                return Unauthorized();
+
+
+
+            var admin = await employeeRepository.GetByUserIDAsync(userID);
+            if (admin == null)
+                return Unauthorized();
+
+
+
+
+
+
+            if (admin.DepartmentId != employee.DepartmentId)
+                return BadRequest("Admins can only perform actions on their own department.");
+
+
+
+            var user = await userManager.FindByIdAsync(employee.UserId);
+
+
+
+            await userManager.DeleteAsync(user);
             return Ok("User Deleted Successfully");
 
         }
-        [HttpPut("ChangePassword")]
+
+
+        [HttpPut("ChangePassword/{employeeId}")]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        //[Authorize(Roles = "User")]
-        public async Task<IActionResult> ChangePassword([FromBody] UpdatePasswordRequestDto request)
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> ChangePassword([FromRoute] Guid employeeId,[FromBody] UpdatePasswordRequestDto request)
         {
             var userID = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userID == null)
                 return Unauthorized();
-            var identityUser = await userManager.FindByIdAsync(userID);
-            if (identityUser == null)
-                return BadRequest("Something Went Wrong!");
-            var response = await userManager.ChangePasswordAsync(identityUser, request.CurrentPassword, request.NewPassword);
+
+            var employee = await employeeRepository.GetByIDAsync(employeeId);
+            if (employee == null)
+                return Unauthorized();
+
+
+            var admin = await employeeRepository.GetByUserIDAsync(userID);
+            if (admin == null)
+                return Unauthorized();
+
+
+
+
+            if (admin.DepartmentId != employee.DepartmentId)
+                return BadRequest("Admins can only perform actions on their own department.");
+
+            var user = await userManager.FindByIdAsync(employee.UserId);
+
+
+
+            var response = await userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
             if (!response.Succeeded)
                 return BadRequest(response.Errors);
             return Ok("Password Changed Successfully");

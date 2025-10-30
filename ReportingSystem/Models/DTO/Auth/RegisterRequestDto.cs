@@ -16,7 +16,6 @@ namespace ReportingSystem.Models.DTO.Auth
         public string PhoneNumber { get; set; }
         [Required]
         [DataType(DataType.Password)]
-        public string Password { get; set; }
-        public string[] Roles { get; set; }
+        public string Password { get; set; }  
     }
 }

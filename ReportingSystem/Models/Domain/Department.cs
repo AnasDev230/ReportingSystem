@@ -14,5 +14,6 @@ namespace ReportingSystem.Models.Domain
 
         public Governorate Governorate { get; set; }
         public ICollection<Employee>? Employees { get; set; }
+        public ICollection<ReportType>? ReportTypes { get; set; }
     }
 }

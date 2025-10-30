@@ -20,14 +20,14 @@ namespace ReportingSystem.Controllers
         }
 
         [HttpGet]
-        //[Authorize(Roles = "Admin,Employee")]
+        [Authorize(Roles = "No Roles For Now")]
         public async Task<IActionResult> GetAll()
         {
             var updates = await reportUpdateRepository.GetAllAsync();
             return Ok(updates);
         }
         [HttpGet("GetReportUpdatesByEmployeeId/{employeeId}")]
-        //[Authorize(Roles = "Admin,Employee")]
+        [Authorize(Roles = "Admin,Employee")]
         public async Task<IActionResult> GetReportUpdatesByEmployeeId([FromRoute] Guid employeeId)
         {
             var updates = await reportUpdateRepository.GetByEmployeeIdAsync(employeeId);
@@ -35,14 +35,14 @@ namespace ReportingSystem.Controllers
         }
 
         [HttpGet("GetReportUpdatesByReportId/{reportId}")]
-        //[Authorize(Roles = "Admin,Employee")]
+        [Authorize(Roles = "Admin,Employee,User")]
         public async Task<IActionResult> GetReportUpdatesByReportId([FromRoute] Guid reportId)
         {
             var updates = await reportUpdateRepository.GetByReportIdAsync(reportId);
             return Ok(updates);
         }
         [HttpGet("GetReportUpdatesById/{Id}")]
-        //[Authorize(Roles = "Admin,Employee")]
+        [Authorize(Roles = "Admin,Employee")]
         public async Task<IActionResult> GetReportUpdatesById([FromRoute] Guid Id)
         {
             var updates = await reportUpdateRepository.GetByIdAsync(Id);

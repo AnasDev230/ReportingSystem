@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using ReportingSystem.Models.DTO.Image;
 using ReportingSystem.Repositories.Interface;
@@ -16,6 +17,7 @@ namespace ReportingSystem.Controllers
             this.imageRepository = imageRepository;
         }
         [HttpPost("{reportId}")]
+        [Authorize(Roles = "Admin,Employee,User")]
         public async Task<IActionResult> UploadImage(IFormFile file, [FromRoute] Guid reportId)
         {
             ValidateFileUpload(file);
@@ -48,6 +50,7 @@ namespace ReportingSystem.Controllers
       
 
         [HttpDelete("{imageId}")]
+        [Authorize(Roles = "Admin,Employee,User")]
         public async Task<IActionResult> DeleteImage([FromRoute] Guid imageId)
         {
             var image = await imageRepository.DeleteAsync(imageId);
@@ -61,6 +64,7 @@ namespace ReportingSystem.Controllers
 
 
         [HttpGet("{imageId}")]
+        [Authorize(Roles = "Admin,Employee,User")]
         public async Task<IActionResult> GetImageByID([FromRoute] Guid imageId)
         {
             var image = await imageRepository.GetByIdAsync(imageId);
@@ -78,6 +82,7 @@ namespace ReportingSystem.Controllers
 
 
         [HttpGet]
+        [Authorize(Roles = "No Roles for Now")]
         public async Task<IActionResult> GetAll()
         {
             var images = await imageRepository.GetAll();
@@ -99,6 +104,7 @@ namespace ReportingSystem.Controllers
 
 
         [HttpGet("GetImagesByReportId/{reportId}")]
+        [Authorize(Roles = "Admin,Employee,User")]
         public async Task<IActionResult> GetAll([FromRoute] Guid reportId)
         {
             var images = await imageRepository.GetByReportIdAsync(reportId);

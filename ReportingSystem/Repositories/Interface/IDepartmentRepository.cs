@@ -9,6 +9,7 @@ namespace ReportingSystem.Repositories.Interface
         Task<IEnumerable<Department>> GetAllAsync();
         Task<IEnumerable<Department>> GetAllByGovernorateIdAsync(Guid GovernorateId);
         Task<Department?> GetByID(Guid id);
+        Task<Department> GetByReportTypeIdAsync(Guid reportTypeId);
         Task<Department?> UpdateAsync(Department department);
         Task<bool> DeleteAsync(Guid id);
     }

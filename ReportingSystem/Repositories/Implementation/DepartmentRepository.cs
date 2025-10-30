@@ -45,6 +45,13 @@ namespace ReportingSystem.Repositories.Implementation
             return await dbContext.Departments.FindAsync(id);
         }
 
+        public async Task<Department> GetByReportTypeIdAsync(Guid reportTypeId)
+        {
+           return await dbContext.Departments.Include(d=>d.ReportTypes)
+                .Where(d => d.ReportTypes.Any(rt => rt.ReportTypeId == reportTypeId))
+                .FirstOrDefaultAsync();
+        }
+
         public async Task<Department?> UpdateAsync(Department department)
         {
             Department existingDepartment = await dbContext.Departments.FindAsync(department.DepartmentId);

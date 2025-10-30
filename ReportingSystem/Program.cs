@@ -95,10 +95,6 @@ builder.Services.AddHttpContextAccessor();
 
 
 
-
-
-
-
 builder.Services.AddIdentityCore<IdentityUser>(options =>
 {
 
@@ -126,14 +122,6 @@ builder.Services.AddIdentityCore<IdentityUser>(options =>
 .AddRoles<IdentityRole>()
 .AddEntityFrameworkStores<SystemDbContext>()
 .AddDefaultTokenProviders();
-
-
-
-
-
-
-
-
 
 
 
