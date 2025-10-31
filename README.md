@@ -103,7 +103,7 @@ Authorization: Bearer eyJhbGciOi...
 | GET    | `/api/Reports/GetReportsByGovernorateId/{GovernorateId}` | Get reports by governorate | ✅            |
 | GET    | `/api/Reports/GetReportsByDepartmentId/{DepartmentId}`   | Get reports by department  | ✅            |
 | GET    | `/api/Reports/GetReportsByReportTypeId/{ReportTypeId}`   | Get reports by type        | ✅            |
-| GET    | `/api/Reports/GetReportsByUserId/{UserId}`               | Get reports by user        | ✅            |
+| GET    | `/api/Reports/GetReportsForUser`                         | Get reports by user        | ✅            |
 | GET    | `/api/Reports/GetReportsForEmployee`                     | Get employee reports       | ✅            |
 | POST   | `/api/Reports/UpdateReportStatus/{reportId}`             | Update report status       | ✅            |
 | POST   | `/api/Reports/RejectReport/{reportId}`                   | Reject a report            | ✅            |
@@ -111,15 +111,15 @@ Authorization: Bearer eyJhbGciOi...
 
 🧩 Report Types API
 
-| Method | Endpoint                                        | Description                     | Auth Required |
-| ------ | ----------------------------------------------- | ------------------------------- | ------------- |
-| GET    | `/api/ReportTypes`                              | Get all report types            | ✅             |
-| POST   | `/api/ReportTypes`                              | Create a new report type        | ✅             |
-| GET    | `/api/ReportTypes/{Id}`                         | Get report type by ID           | ✅             |
-| PUT    | `/api/ReportTypes/{Id}`                         | Update report type              | ✅             |
-| DELETE | `/api/ReportTypes/{Id}`                         | Delete report type              | ✅             |
-| GET    | `/api/ReportTypes/Departments/{departmentId}`   | Get report types by department  | ✅             |
-| GET    | `/api/ReportTypes/Governorates/{governorateId}` | Get report types by governorate | ✅             |
+| Method | Endpoint                                                            | Description                     | Auth Required  |
+| ------ | ------------------------------------------------------------------- | ------------------------------- | -------------  |
+| GET    | `/api/ReportTypes`                                                  | Get all report types            | ✅             |
+| POST   | `/api/ReportTypes`                                                  | Create a new report type        | ✅             |
+| GET    | `/api/ReportTypes/{Id}`                                             | Get report type by ID           | ✅             |
+| PUT    | `/api/ReportTypes/{Id}`                                             | Update report type              | ✅             |
+| DELETE | `/api/ReportTypes/{Id}`                                             | Delete report type              | ✅             |
+| GET    | `/api/ReportTypes/GetAllReportTypesByDepartmentId/{departmentId}`   | Get report types by department  | ✅             |
+| GET    | `/api/ReportTypes/GetAllReportTypesByGovernorateId/{governorateId}` | Get report types by governorate | ✅             |
 
 
 
