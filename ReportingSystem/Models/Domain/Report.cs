@@ -17,7 +17,7 @@ namespace ReportingSystem.Models.Domain
         public decimal Longitude { get; set; }
         public string Address { get; set; }
         public string Status {  get; set; }
-        public DateTime CreatedAt { get; set; }
+        public DateTime CreatedAt { get; set; }= DateTime.Now;
         public DateTime? UpdatedAt { get; set; }
         public ICollection<ReportUpdate> ReportUpdates { get; set; }
         public ICollection<Image> Images { get; set; }=new List<Image>();

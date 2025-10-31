@@ -31,6 +31,7 @@ namespace ReportingSystem.Repositories.Implementation
                 EmployeeId = employeeId,
                 Status = newStatus,
                 Comment = comment,
+
             };
             await dbContext.ReportUpdates.AddAsync(reportUpdate);
             await dbContext.SaveChangesAsync();
@@ -103,24 +104,53 @@ namespace ReportingSystem.Repositories.Implementation
                 .Where(r => r.ReportTypeId == reportTypeId)
                 .ToListAsync();
         }
-        public async Task<IEnumerable<Report>> GetByUserIdAsync(string userId)
+        public async Task<IEnumerable<Report>> GetByUserIdAsync(string userId, string? status = null, bool sortByNewest = true)
         {
-            return await dbContext.Reports
-                .Include(r => r.ReportType)
-                .Include(r => r.Governorate)
-                .Include(r => r.ReportType.Department)
-                .Where(r => r.UserId == userId)
-                .ToListAsync();
+            var query = dbContext.Reports
+         .Include(r => r.ReportType)
+         .ThenInclude(rt => rt.Department)
+         .Include(r => r.Governorate)
+         .Where(r => r.UserId == userId);
+
+            if (!string.IsNullOrEmpty(status))
+            {
+                query = query.Where(r => r.Status == status);
+            }
+
+            query = sortByNewest
+            ? query.OrderByDescending(r => r.CreatedAt)
+            : query.OrderBy(r => r.CreatedAt);
+
+            return await query.ToListAsync();
+
         }
 
-        public async Task<IEnumerable<object>> GetReportsForEmployeeAsync(string userId)
+        public async Task<IEnumerable<object>> GetReportsForEmployeeAsync(string userId, string? status = null, bool sortByNewest = true)
         {
             var employee = await dbContext.Employees.FirstOrDefaultAsync(r => r.UserId == userId);
             if (employee == null)
                 return Enumerable.Empty<Report>();
 
 
-            var reports= await dbContext.Reports.Where(x => x.ReportType.DepartmentId == employee.DepartmentId)
+
+
+            var query = dbContext.Reports
+                 .Where(x => x.ReportType.DepartmentId == employee.DepartmentId)
+                 .AsQueryable();
+
+            if (!string.IsNullOrEmpty(status))
+                query = query.Where(r => r.Status.ToLower() == status.ToLower());
+
+
+            query = sortByNewest
+              ? query.OrderByDescending(r => r.CreatedAt)
+              : query.OrderBy(r => r.CreatedAt);
+
+
+
+
+
+            var reports= await query
                 .Select(r => new
                 {
                     r.ReportId,

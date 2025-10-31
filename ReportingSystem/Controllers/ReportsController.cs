@@ -195,22 +195,30 @@ namespace ReportingSystem.Controllers
 
         [HttpGet("GetReportsForUser")]
         [Authorize(Roles = "User")]
-        public async Task<IActionResult> GetReportsForUser()
+        public async Task<IActionResult> GetReportsForUser([FromQuery] string? status, [FromQuery] bool sortByNewest = true)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (String.IsNullOrEmpty(userId))
                 return Unauthorized("Authentication is required. Please log in again.");
 
+            var allowedStatuses = new List<string>
+              {
+          "Pending",
+        "UnderReview",
+        "In-Progress",
+        "Completed",
+        "Rejected"
+    };
+            if (!string.IsNullOrEmpty(status) && !allowedStatuses.Contains(status))
+            {
+                return BadRequest("Invalid status value");
+            }
 
 
-
-
-
-
-
-            var reports = await reportRepository.GetByUserIdAsync(userId);
+            var reports = await reportRepository.GetByUserIdAsync(userId,status,sortByNewest);
             if (!reports.Any())
                 return NotFound("No Reports For this User!");
+
 
 
 
@@ -286,7 +294,7 @@ namespace ReportingSystem.Controllers
 
         [HttpGet("GetReportsForEmployee")]
         [Authorize(Roles = "Employee")]
-        public async Task<IActionResult> GetReportsForEmployee()
+        public async Task<IActionResult> GetReportsForEmployee([FromQuery] string? status,[FromQuery] bool sortByNewest = true)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
@@ -296,10 +304,23 @@ namespace ReportingSystem.Controllers
             if (employee == null)
                 return Forbid("You do not have permission to access this resource.");
 
+            var allowedStatuses = new List<string>
+              {
+          "Pending",
+        "UnderReview",
+        "In-Progress",
+        "Completed",
+        "Rejected"
+    };
+            if (!string.IsNullOrEmpty(status) && !allowedStatuses.Contains(status))
+            {
+                return BadRequest("Invalid status value");
+            }
 
 
 
-            var reports=await reportRepository.GetReportsForEmployeeAsync(userId);
+
+            var reports =await reportRepository.GetReportsForEmployeeAsync(userId,status,sortByNewest);
 
             if (!reports.Any())
                 return NotFound("No Reports For this Department!");
