@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+﻿using System.Security.Claims;
+using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -14,15 +15,17 @@ namespace ReportingSystem.Controllers
     public class DepartmentsController : ControllerBase
     {
         private readonly IMapper mapper;
+        private readonly IEmployeeRepository employeeRepository;
         private readonly IDepartmentRepository departmentRepository;
-        public DepartmentsController(IDepartmentRepository departmentRepository,IMapper mapper)
+        public DepartmentsController(IDepartmentRepository departmentRepository,IMapper mapper,IEmployeeRepository employeeRepository)
         {
             this.departmentRepository = departmentRepository;
             this.mapper = mapper;
+            this.employeeRepository = employeeRepository;
         }
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
-        [Authorize(Roles ="Admin")]
+        [Authorize(Roles ="No Roles For Now")]
         public async Task<IActionResult> CreateDepartment([FromBody] CreateDepartmentRequestDto request)
         {
             Department department=mapper.Map<Department>(request);
@@ -31,6 +34,7 @@ namespace ReportingSystem.Controllers
         }
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
+        [Authorize(Roles = "Admin,Employee,User")]
         public async Task<IActionResult> GetAllDepartments()
         {
             var departments=await departmentRepository.GetAllAsync();
@@ -40,7 +44,7 @@ namespace ReportingSystem.Controllers
         [HttpGet("GetByGovernorateId/{governorateId}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-
+        [Authorize(Roles = "Admin,Employee,User")]
         public async Task<IActionResult> GetAllDepartmentsByGovernorateId([FromRoute] Guid governorateId)
         {
             var departments = await departmentRepository.GetAllByGovernorateIdAsync(governorateId);
@@ -51,6 +55,7 @@ namespace ReportingSystem.Controllers
         [HttpGet("{Id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [Authorize(Roles = "Admin,Employee,User")]
         public async Task<IActionResult> GetDepartmentById([FromRoute] Guid Id)
         {
             var department = await departmentRepository.GetByID(Id);
@@ -67,7 +72,22 @@ namespace ReportingSystem.Controllers
         {
             var department=await departmentRepository.GetByID(Id);
             if(department==null)
-                return NotFound();
+                return NotFound("Department not found.");
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized("Authentication is required. Please log in again.");
+
+
+            var admin = await employeeRepository.GetByUserIDAsync(userId);
+            if (admin == null)
+                return Forbid("You do not have permission to access this resource.");
+
+            if(admin.DepartmentId!=department.DepartmentId)
+                return Forbid("You do not have permission to access this resource.");
+
+
+
             mapper.Map(request, department);
             department = await departmentRepository.UpdateAsync(department);
         return Ok(mapper.Map<DepartmentDto>(department));
@@ -82,9 +102,30 @@ namespace ReportingSystem.Controllers
             var department = await departmentRepository.GetByID(Id);
             if (department == null)
                 return NotFound();
-            if(await departmentRepository.DeleteAsync(Id))
-                return Ok();
-            return BadRequest();
+
+
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized("Authentication is required. Please log in again.");
+
+
+            var admin = await employeeRepository.GetByUserIDAsync(userId);
+            if (admin == null)
+                return Forbid("You do not have permission to access this resource.");
+
+            if (admin.DepartmentId != department.DepartmentId)
+                return Forbid("You do not have permission to access this resource.");
+
+
+
+
+
+
+
+            if (await departmentRepository.DeleteAsync(Id))
+                return Ok("Department Deleted Successfully");
+            return BadRequest("Something Went Wrong!");
 
         }
     }

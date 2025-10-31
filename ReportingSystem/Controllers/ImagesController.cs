@@ -1,8 +1,13 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Security.Claims;
+using Azure.Core.GeoJson;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using ReportingSystem.Models.Domain;
 using ReportingSystem.Models.DTO.Image;
+using ReportingSystem.Repositories.Implementation;
 using ReportingSystem.Repositories.Interface;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace ReportingSystem.Controllers
 {
@@ -11,15 +16,50 @@ namespace ReportingSystem.Controllers
     public class ImagesController : ControllerBase
     {
         private readonly IImageRepository imageRepository;
+        private readonly IReportRepository reportRepository;
+        private readonly IEmployeeRepository employeeRepository;
 
-        public ImagesController(IImageRepository imageRepository)
+        public ImagesController(IImageRepository imageRepository,IReportRepository reportRepository,EmployeeRepository employeeRepository)
         {
             this.imageRepository = imageRepository;
+            this.reportRepository = reportRepository;
+            this.employeeRepository = employeeRepository;
         }
         [HttpPost("{reportId}")]
-        [Authorize(Roles = "Admin,Employee,User")]
+        [Authorize(Roles = "User")]
         public async Task<IActionResult> UploadImage(IFormFile file, [FromRoute] Guid reportId)
         {
+
+            var report=await reportRepository.GetByIdAsync(reportId);
+            if(report==null)
+                return NotFound("Report Not Found!");
+
+
+
+
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized("Authentication is required. Please log in again.");
+
+            
+            if (userId != report.UserId)
+                return Forbid("You do not have permission to access this resource.");
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             ValidateFileUpload(file);
             if (ModelState.IsValid)
             {
@@ -50,11 +90,48 @@ namespace ReportingSystem.Controllers
       
 
         [HttpDelete("{imageId}")]
-        [Authorize(Roles = "Admin,Employee,User")]
+        [Authorize(Roles = "User")]
         public async Task<IActionResult> DeleteImage([FromRoute] Guid imageId)
         {
-            var image = await imageRepository.DeleteAsync(imageId);
-            if(image)
+
+            var image=await imageRepository.GetByIdAsync(imageId);
+
+
+            var report = await reportRepository.GetByIdAsync(image.ReportId);
+            if (report == null)
+                return NotFound("Report Not Found!");
+
+
+
+
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized("Authentication is required. Please log in again.");
+
+
+            if (User.IsInRole("User"))
+            {
+                if (userId != report.UserId)
+                    return Forbid("You do not have permission to access this resource.");
+            }
+
+
+            if (User.IsInRole("Admin") || User.IsInRole("Employee"))
+            {
+                var employee = await employeeRepository.GetByUserIDAsync(userId);
+                if (employee == null)
+                    return Forbid("You do not have permission to access this resource.");
+
+                if (employee.DepartmentId != report.ReportType.DepartmentId)
+                    return Forbid("You can only access reports in your own department.");
+            }
+
+
+
+
+
+            if (await imageRepository.DeleteAsync(imageId))
                 return Ok("Image Deleted Successfully");
             
             return BadRequest(ModelState);
@@ -70,6 +147,43 @@ namespace ReportingSystem.Controllers
             var image = await imageRepository.GetByIdAsync(imageId);
             if (image == null)
                 return NotFound();
+
+
+
+
+
+            var report = await reportRepository.GetByIdAsync(image.ReportId);
+            if (report == null)
+                return NotFound("Report Not Found!");
+
+
+
+
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized("Authentication is required. Please log in again.");
+
+
+            if (User.IsInRole("User"))
+            {
+                if (userId != report.UserId)
+                    return Forbid("You do not have permission to access this resource.");
+            }
+                
+
+            if (User.IsInRole("Admin") || User.IsInRole("Employee"))
+            {
+                var employee = await employeeRepository.GetByUserIDAsync(userId);
+                if (employee == null)
+                    return Forbid("You do not have permission to access this resource.");
+
+                if (employee.DepartmentId != report.ReportType.DepartmentId)
+                    return Forbid("You can only access reports in your own department.");
+            }
+             
+
+
             var response = new ImageDto
             {
                 ImageId = imageId,
@@ -105,8 +219,40 @@ namespace ReportingSystem.Controllers
 
         [HttpGet("GetImagesByReportId/{reportId}")]
         [Authorize(Roles = "Admin,Employee,User")]
-        public async Task<IActionResult> GetAll([FromRoute] Guid reportId)
+        public async Task<IActionResult> GetAllImagesByReportId([FromRoute] Guid reportId)
         {
+
+            var report = await reportRepository.GetByIdAsync(reportId);
+            if (report == null)
+                return NotFound("Report Not Found!");
+
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized("Authentication is required. Please log in again.");
+
+            if (User.IsInRole("User"))
+            {
+                if (userId != report.UserId)
+                    return Forbid("You do not have permission to access this resource.");
+            }
+
+
+
+
+            if (User.IsInRole("Admin") || User.IsInRole("Employee"))
+            {
+                var employee=await employeeRepository.GetByUserIDAsync(userId);
+                if (employee == null)
+                    return Forbid("You do not have permission to access this resource.");
+
+                if (employee.DepartmentId!=report.ReportType.DepartmentId)
+                    return Forbid("You can only access reports in your own department.");
+            }
+
+
+
+
             var images = await imageRepository.GetByReportIdAsync(reportId);
             var response = new List<ImageDto>();
             foreach (var Image in images)

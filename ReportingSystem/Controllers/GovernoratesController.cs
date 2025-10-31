@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ReportingSystem.Models.Domain;
 using ReportingSystem.Models.DTO.Governorate;
@@ -19,12 +20,14 @@ namespace ReportingSystem.Controllers
             this.mapper = mapper;
         }
         [HttpGet]
+        [Authorize(Roles = "Admin,Employee,User")]
         public async Task<IActionResult> GetAllGovernorates()
         {
             var Governorrates=await governorateRepository.GetAllAsync();
             return Ok(mapper.Map<List<GovernorateDto>>(Governorrates));
         }
         [HttpGet("{Id}")]
+        [Authorize(Roles = "Admin,Employee,User")]
         public async Task<IActionResult> GetGovernorateById([FromRoute] Guid Id)
         {
             return Ok(mapper.Map<GovernorateDto>(await governorateRepository.GetByID(Id)));

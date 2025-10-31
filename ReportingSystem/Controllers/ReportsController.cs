@@ -19,13 +19,15 @@ namespace ReportingSystem.Controllers
         private readonly IMapper mapper;
         private readonly IEmployeeRepository employeeRepository;
         private readonly IDepartmentRepository departmentRepository;
+        private readonly IReportTypeRepository reportTypeRepository;
 
-        public ReportsController(IReportRepository reportRepository, IMapper mapper,IEmployeeRepository employeeRepository,IDepartmentRepository departmentRepository)
+        public ReportsController(IReportRepository reportRepository, IMapper mapper,IEmployeeRepository employeeRepository,IDepartmentRepository departmentRepository,IReportTypeRepository reportTypeRepository)
         {
             this.reportRepository = reportRepository;
             this.mapper = mapper;
             this.employeeRepository = employeeRepository;
             this.departmentRepository = departmentRepository;
+            this.reportTypeRepository = reportTypeRepository;
         }
         [HttpPost]
         [Authorize(Roles = "User")]
@@ -33,13 +35,18 @@ namespace ReportingSystem.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (String.IsNullOrEmpty(userId))
-                return Unauthorized();
+                return Unauthorized("Authentication is required. Please log in again.");
+
+
             Report report=mapper.Map<Report>(request);
             report.UserId = userId;
             report.Status = "Pending";
             await reportRepository.CreateAsync(report);
             return Created("",mapper.Map<ReportDto>(report));
         }
+
+
+
         [HttpGet]
         //[Authorize(Roles = "No Roles For Now")]
         public async Task<IActionResult> GetAllReports()
@@ -48,94 +55,166 @@ namespace ReportingSystem.Controllers
             var reportsDto = mapper.Map<IEnumerable<ReportDto>>(reports);
             return Ok(reportsDto);
         }
+
+
+
         [HttpGet("{ReportId}")]
         [Authorize(Roles = "Admin,Employee,User")]
         public async Task<IActionResult> GetReportById([FromRoute] Guid ReportId)
         {
             Report report= await reportRepository.GetByIdAsync(ReportId);
+
             if(report==null)
                 return NotFound();
+
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (String.IsNullOrEmpty(userId))
+                return Unauthorized("Authentication is required. Please log in again.");
+
+
+            if (User.IsInRole("User"))
+            {
+                if (report.UserId != userId)
+                    return Forbid("Access denied. You can only view your own reports.");
+            }
+
+
+            if (User.IsInRole("Admin") || User.IsInRole("Employee"))
+            {
+                var employee = await employeeRepository.GetByUserIDAsync(userId);
+                if (employee == null)
+                    return Forbid("You do not have permission to access this resource.");
+
+                if (report.ReportType.DepartmentId != employee.DepartmentId)
+                    return Forbid("You can only access reports in your own department.");
+            }
+
+
             return Ok(mapper.Map<ReportDto>(report));
         }
 
+
+
+
+
         [HttpGet("GetReportsByGovernorateId/{GovernorateId}")]
-        [Authorize(Roles = "No Roles For Now")]
+        //[Authorize(Roles = "No Roles For Now")]
         public async Task<IActionResult> GetReportsByGovernorateId([FromRoute] Guid GovernorateId)
         {
             var reports=await reportRepository.GetByGovernorateIdAsync(GovernorateId);
-            if (reports==null)
-                return NotFound();
+            if (!reports.Any())
+                return NotFound("No Reports For this Governorate!");
             return Ok(mapper.Map<List<ReportDto>>(reports));
         }
+
+
+
+
+
         [HttpGet("GetReportsByDepartmentId/{DepartmentId}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetReportsByDepartmentId([FromRoute] Guid DepartmentId)
         {
-            var userID = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userID == null)
-                return Unauthorized();
+
+            var department=await departmentRepository.GetByID(DepartmentId);
+            if(department==null)
+                return NotFound("Department Not Found!");
+
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (String.IsNullOrEmpty(userId))
+                return Unauthorized("Authentication is required. Please log in again.");
 
 
 
-            var admin = await employeeRepository.GetByUserIDAsync(userID);
+
+
+            var admin = await employeeRepository.GetByUserIDAsync(userId);
             if (admin == null)
-                return Unauthorized();
+                return Forbid("You do not have permission to access this resource.");
 
-
-
-
-            if (admin.DepartmentId != DepartmentId)
-                return Unauthorized("Admins can only perform actions on their own department.");
-
-
+            
+            if (admin.DepartmentId != department.DepartmentId)
+                return Forbid("Admins can only perform actions on their own department.");
 
 
 
             var reports = await reportRepository.GetByDepartmentIdAsync(DepartmentId);
-            if (reports == null)
-                return NotFound();
+            if (!reports.Any())
+                return NotFound("No Reports For this Department!");
             return Ok(mapper.Map<List<ReportDto>>(reports));
         }
+
+
+
+
+
+
+
         [HttpGet("GetReportsByReportTypeId/{ReportTypeId}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetReportsByReportTypeId([FromRoute] Guid ReportTypeId)
         {
 
-            var userID = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userID == null)
-                return Unauthorized();
+            var reportType=await reportTypeRepository.GetByIdAsync(ReportTypeId);
+            if (reportType == null)
+                return NotFound("Report Type Not Found!");
 
 
 
-            var admin = await employeeRepository.GetByUserIDAsync(userID);
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (String.IsNullOrEmpty(userId))
+                return Unauthorized("Authentication is required. Please log in again.");
+
+
+
+            var admin = await employeeRepository.GetByUserIDAsync(userId);
             if (admin == null)
-                return Unauthorized();
+                return Forbid("You do not have permission to access this resource.");
+
+
+
 
             var department=await departmentRepository.GetByReportTypeIdAsync(ReportTypeId);
 
 
             if (admin.DepartmentId != department.DepartmentId)
-                return BadRequest("Admins can only perform actions on their own department.");
+                return Forbid("You can only access reports in your own department.");
 
 
 
 
             var reports = await reportRepository.GetByReportTypeIdAsync(ReportTypeId);
-            if (reports == null)
-                return NotFound(); 
+            if (!reports.Any())
+                return NotFound("No Reports For this Report Type!"); 
             return Ok(mapper.Map<List<ReportDto>>(reports));
         }
 
 
-        [HttpGet("GetReportsByUserId/{UserId}")]
-        [Authorize(Roles = "No Roles For Now")]
-        public async Task<IActionResult> GetReportsByUserId([FromRoute] string UserId)
+        [HttpGet("GetReportsForUser")]
+        [Authorize(Roles = "User")]
+        public async Task<IActionResult> GetReportsForUser()
         {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (String.IsNullOrEmpty(userId))
+                return Unauthorized("Authentication is required. Please log in again.");
 
 
-            var reports = await reportRepository.GetByUserIdAsync(UserId);
-            if (reports == null)
-                return NotFound();
+
+
+
+
+
+
+            var reports = await reportRepository.GetByUserIdAsync(userId);
+            if (!reports.Any())
+                return NotFound("No Reports For this User!");
+
+
+
+
             return Ok(mapper.Map<List<ReportDto>>(reports));
         }
 
@@ -159,7 +238,8 @@ namespace ReportingSystem.Controllers
                 return Unauthorized();
             Report report=await reportRepository.GetByIdAsync(ReportId);
             if (report==null)
-                return NotFound();
+                return NotFound("Report Not Found!");
+
             mapper.Map(request, report);
             if (User.IsInRole("User"))
             {
@@ -169,7 +249,7 @@ namespace ReportingSystem.Controllers
                     return BadRequest("You cannot update this report because its status is not Pending.");
                 }
                 if (report.UserId != userId)
-                    return Unauthorized("You cannot update this report because it does not belong to you");
+                    return Forbid("You cannot update this report because it does not belong to you");
 
             }
 
@@ -210,9 +290,20 @@ namespace ReportingSystem.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
-                return Unauthorized();
-            
+                return Unauthorized("Authentication is required. Please log in again.");
+
+            var employee = await employeeRepository.GetByUserIDAsync(userId);
+            if (employee == null)
+                return Forbid("You do not have permission to access this resource.");
+
+
+
+
             var reports=await reportRepository.GetReportsForEmployeeAsync(userId);
+
+            if (!reports.Any())
+                return NotFound("No Reports For this Department!");
+
             return Ok(reports);
         }
         
@@ -250,7 +341,7 @@ namespace ReportingSystem.Controllers
 
 
             if(employee.DepartmentId!=report.ReportType.DepartmentId)
-                return Unauthorized("Employees can only perform actions on their own department.");
+                return Forbid("Employees can only perform actions on their own department.");
 
 
 
@@ -320,7 +411,7 @@ namespace ReportingSystem.Controllers
                 return NotFound("Report not found.");
 
             if (employee.DepartmentId != report.ReportType.DepartmentId)
-                return Unauthorized("Employees can only perform actions on their own department.");
+                return Forbid("Employees can only perform actions on their own department.");
 
 
             var currentStatus = report.Status;
@@ -336,8 +427,6 @@ namespace ReportingSystem.Controllers
                 reportUpdate.Status
             });
         }
-
-
 
 
 

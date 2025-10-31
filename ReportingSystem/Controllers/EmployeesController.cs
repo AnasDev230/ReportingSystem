@@ -44,10 +44,10 @@ namespace ReportingSystem.Controllers
 
             var admin= await employeeRepository.GetByUserIDAsync(userId);
             if (admin == null)
-                return Unauthorized();
+                return Forbid("You do not have permission to access this resource.");
 
-            if(admin.DepartmentId !=request.DepartmentId)
-                return BadRequest("Admins can only perform actions on their own department.");
+            if (admin.DepartmentId !=request.DepartmentId)
+                return Forbid("Admins can only perform actions on their own department.");
             
 
             var identityUser = new IdentityUser
@@ -153,11 +153,11 @@ namespace ReportingSystem.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userId == null)
-                return Unauthorized();
+                return Unauthorized("Authentication is required. Please log in again.");
 
             var user = await userManager.FindByIdAsync(userId);
             if (user == null)
-                return NotFound();
+                return NotFound("User Not Found!");
             var employee= await employeeRepository.GetByUserIDAsync(user.Id);
             if (employee == null)
                 return NotFound("Employee not found for this user!");
@@ -188,13 +188,13 @@ namespace ReportingSystem.Controllers
 
             var employee = await employeeRepository.GetByIDAsync(employeeId);
             if (employee == null)
-                return Unauthorized();
+                return NotFound("Employee Not Found!");
 
 
 
             var admin = await employeeRepository.GetByUserIDAsync(userID);
             if (admin == null)
-                return Unauthorized();
+                return Forbid("You do not have permission to access this resource.");
 
 
 
@@ -202,7 +202,7 @@ namespace ReportingSystem.Controllers
 
 
             if (admin.DepartmentId != employee.DepartmentId)
-                return BadRequest("Admins can only perform actions on their own department.");
+                return Forbid("Admins can only perform actions on their own department.");
 
 
 
@@ -225,22 +225,22 @@ namespace ReportingSystem.Controllers
         {
             var userID = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userID == null)
-                return Unauthorized();
+                return Unauthorized("Authentication is required. Please log in again.");
 
             var employee = await employeeRepository.GetByIDAsync(employeeId);
             if (employee == null)
-                return Unauthorized();
+                return NotFound("Employee Not Found!");
 
 
             var admin = await employeeRepository.GetByUserIDAsync(userID);
             if (admin == null)
-                return Unauthorized();
+                return Forbid("You do not have permission to access this resource.");
 
 
 
 
             if (admin.DepartmentId != employee.DepartmentId)
-                return BadRequest("Admins can only perform actions on their own department.");
+                return Forbid("Admins can only perform actions on their own department.");
 
             var user = await userManager.FindByIdAsync(employee.UserId);
 
