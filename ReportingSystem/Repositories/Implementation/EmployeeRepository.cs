@@ -36,14 +36,24 @@ namespace ReportingSystem.Repositories.Implementation
 
         public async Task<IEnumerable<Employee>> GetAllByDepartmentIdAsync(Guid departmentId)
         {
-           return await  dbContext.Employees.Where(x=>x.DepartmentId==departmentId).ToListAsync();
+            return  await dbContext.Employees
+            .Include(e => e.User)
+            .Include(e => e.Department)
+            .ThenInclude(d => d.Governorate)
+            .Where(e => e.DepartmentId == departmentId)
+            .ToListAsync();
         }
 
         public async Task<IEnumerable<Employee>> GetAllByGovernorateIdAsync(Guid governorateId)
         {
-            return await dbContext.Employees.Include(d => d.Department)
-                .ThenInclude(g => g.Governorate)
-                .Where(x => x.Department.GovernorateId == governorateId).ToArrayAsync();
+
+            return await dbContext.Employees
+            .Include(e => e.User)
+            .Include(e => e.Department)
+            .ThenInclude(d => d.Governorate)
+            .Where(e => e.Department.GovernorateId == governorateId)
+            .ToListAsync();
+
         }
 
         public async Task<Employee?> GetByIDAsync(Guid id)

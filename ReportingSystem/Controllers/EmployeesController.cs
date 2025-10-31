@@ -21,13 +21,133 @@ namespace ReportingSystem.Controllers
         private readonly IMapper mapper;
         private readonly UserManager<IdentityUser> userManager;
         private readonly ITokenRepository tokenRepository;
-        public EmployeesController(IEmployeeRepository employeeRepository, IMapper mapper, UserManager<IdentityUser> userManager, ITokenRepository tokenRepository)
+        private readonly IDepartmentRepository departmentRepository;
+        private readonly IGovernorateRepository governorateRepository;
+
+        public EmployeesController(IEmployeeRepository employeeRepository, IMapper mapper, UserManager<IdentityUser> userManager, ITokenRepository tokenRepository,IDepartmentRepository departmentRepository,IGovernorateRepository governorateRepository)
         {
             this.mapper = mapper;
             this.employeeRepository = employeeRepository;
             this.userManager = userManager;
             this.tokenRepository = tokenRepository;
+            this.departmentRepository = departmentRepository;
+            this.governorateRepository = governorateRepository;
         }
+
+
+
+
+
+        [HttpGet("GetAllEmployeesByDepartmentId/{departmentId}")]
+        [Authorize(Roles ="Admin")]
+        public async Task<IActionResult> GetAllEmployeesByDepartmentId([FromRoute] Guid departmentId)
+        {
+
+            var department=await departmentRepository.GetByID(departmentId);
+            if(department == null)
+                return NotFound("Department Not Found!");
+
+
+
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (String.IsNullOrEmpty(userId))
+                return Unauthorized("Authentication is required. Please log in again.");
+
+            var admin = await employeeRepository.GetByUserIDAsync(userId);
+            if (admin == null)
+                return Forbid("You do not have permission to access this resource.");
+
+            if (admin.DepartmentId != department.DepartmentId)
+                return Forbid("Admins can only perform actions on their own department.");
+
+
+            var employees=await employeeRepository.GetAllByDepartmentIdAsync(department.DepartmentId);
+
+            if (!employees.Any())
+                return NotFound("No Employees in this Department!");
+
+            var result = employees.Select(e => new
+            {
+                EmployeeId = e.EmployeeId,
+                DepartmentId = e.DepartmentId,
+                DepartmentName=e.Department.Name,
+                UserId = e.UserId,
+                EmployeeName = e.User.UserName,
+                PhoneNumber = e.User.PhoneNumber,
+                Email = e.User.Email,
+                Governorate=e.Department.Governorate.Name,
+            });
+            return Ok(result);
+
+
+        }
+
+
+
+
+
+        [HttpGet("GetAllEmployeesByGovernorateId/{governorateId}")]
+        [Authorize(Roles = "No Roles For Now")]
+        public async Task<IActionResult> GetAllEmployeesByGovernorateId([FromRoute] Guid governorateId)
+        {
+
+            var governorate = await governorateRepository.GetByID(governorateId);
+            if (governorate == null)
+                return NotFound("Governorate Not Found!");
+
+
+
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (String.IsNullOrEmpty(userId))
+                return Unauthorized("Authentication is required. Please log in again.");
+
+            var admin = await employeeRepository.GetByUserIDAsync(userId);
+            if (admin == null)
+                return Forbid("You do not have permission to access this resource.");
+
+            if (admin.Department.Governorate.GovernorateId != governorate.GovernorateId)
+                return Forbid("Super Admins can only perform actions on their own Governorate.");
+
+
+            var employees = await employeeRepository.GetAllByGovernorateIdAsync(governorate.GovernorateId);
+
+            if (!employees.Any())
+                return NotFound("No Employees in this Department!");
+
+            var result = employees.Select(e => new
+            {
+                EmployeeId = e.EmployeeId,
+                DepartmentId = e.DepartmentId,
+                DepartmentName = e.Department.Name,
+                UserId = e.UserId,
+                EmployeeName = e.User.UserName,
+                PhoneNumber = e.User.PhoneNumber,
+                Email = e.User.Email,
+                Governorate = e.Department.Governorate.Name,
+            });
+            return Ok(result);
+
+
+
+
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         [HttpPost("CreateEmployee")]
         [Authorize(Roles ="Admin")]
         public async Task<IActionResult> CreateEmployee([FromBody] CreateEmployeeRequestDto request)
@@ -252,8 +372,6 @@ namespace ReportingSystem.Controllers
             return Ok("Password Changed Successfully");
         }
 
-
-
         public static string NormalizeToLocalSyrianPhone(string phone)
             {
                 if (string.IsNullOrWhiteSpace(phone))
@@ -272,6 +390,8 @@ namespace ReportingSystem.Controllers
 
                 return phone;
             }
+
+
         }
     }
 

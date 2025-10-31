@@ -80,6 +80,7 @@ namespace ReportingSystem.Repositories.Implementation
         {
             return await dbContext.Reports
                 .Include(r => r.ReportType)
+                .Include(r => r.Governorate)
                 .Include(r => r.ReportType.Department)
                 .Include(r => r.User)
                 .Where(r => r.GovernorateId == governorateId)
@@ -98,6 +99,7 @@ namespace ReportingSystem.Repositories.Implementation
         public async Task<IEnumerable<Report>> GetByReportTypeIdAsync(Guid reportTypeId)
         {
             return await dbContext.Reports
+                .Include(r => r.ReportType)
                 .Include(r => r.Governorate)
                 .Include(r => r.ReportType.Department)
                 .Include(r => r.User)

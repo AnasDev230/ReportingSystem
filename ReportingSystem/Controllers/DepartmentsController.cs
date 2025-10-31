@@ -49,7 +49,7 @@ namespace ReportingSystem.Controllers
         {
             var departments = await departmentRepository.GetAllByGovernorateIdAsync(governorateId);
             if (departments == null)
-                return NotFound();
+                return NotFound("Department Not Found!");
             return Ok(mapper.Map<List<DepartmentDto>>(departments));
         }
         [HttpGet("{Id}")]
@@ -60,7 +60,7 @@ namespace ReportingSystem.Controllers
         {
             var department = await departmentRepository.GetByID(Id);
             if(department == null)
-                return NotFound();
+                return NotFound("Department Not Found!");
             return Ok(mapper.Map<DepartmentDto>(department));
         }
 
@@ -101,7 +101,7 @@ namespace ReportingSystem.Controllers
         {
             var department = await departmentRepository.GetByID(Id);
             if (department == null)
-                return NotFound();
+                return NotFound("Department Not Found!");
 
 
 

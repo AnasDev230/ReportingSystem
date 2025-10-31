@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Security.Claims;
 using AutoMapper;
 using Azure.Core;
@@ -90,8 +91,23 @@ namespace ReportingSystem.Controllers
                     return Forbid("You can only access reports in your own department.");
             }
 
+            return Ok(new
+            {
+                ReportId = report.ReportId,
+                Title = report.Title,
+                Description = report.Description,
+                Latitude = report.Latitude,
+                Longitude = report.Longitude,
+                Address = report.Address,
+                Status = report.Status,
+                CreatedAt = report.CreatedAt,
+                UpdatedAt = report.UpdatedAt,
+                ReportTypeName = report.ReportType?.ReportTypeName,
+                GovernorateName = report.Governorate?.Name
+            });
 
-            return Ok(mapper.Map<ReportDto>(report));
+
+
         }
 
 
@@ -105,7 +121,28 @@ namespace ReportingSystem.Controllers
             var reports=await reportRepository.GetByGovernorateIdAsync(GovernorateId);
             if (!reports.Any())
                 return NotFound("No Reports For this Governorate!");
-            return Ok(mapper.Map<List<ReportDto>>(reports));
+
+
+
+
+            return Ok(reports.Select(r => new
+            {
+                ReportId = r.ReportId,
+                Title = r.Title,
+                Description = r.Description,
+                Latitude = r.Latitude,
+                Longitude = r.Longitude,
+                Address = r.Address,
+                Status = r.Status,
+                CreatedAt = r.CreatedAt,
+                UpdatedAt = r.UpdatedAt,
+                ReportTypeName = r.ReportType.ReportTypeName,
+                GovernorateName = r.Governorate.Name,
+            }
+                ));
+
+
+
         }
 
 
@@ -143,7 +180,39 @@ namespace ReportingSystem.Controllers
             var reports = await reportRepository.GetByDepartmentIdAsync(DepartmentId);
             if (!reports.Any())
                 return NotFound("No Reports For this Department!");
-            return Ok(mapper.Map<List<ReportDto>>(reports));
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            return Ok(reports.Select(r => new
+            {
+                ReportId = r.ReportId,
+                Title = r.Title,
+                Description = r.Description,
+                Latitude = r.Latitude,
+                Longitude = r.Longitude,
+                Address = r.Address,
+                Status = r.Status,
+                CreatedAt = r.CreatedAt,
+                UpdatedAt = r.UpdatedAt,
+                ReportTypeName = r.ReportType.ReportTypeName,
+                GovernorateName = r.Governorate.Name,
+            }
+                ));
+
+
+
+
         }
 
 
@@ -188,8 +257,23 @@ namespace ReportingSystem.Controllers
 
             var reports = await reportRepository.GetByReportTypeIdAsync(ReportTypeId);
             if (!reports.Any())
-                return NotFound("No Reports For this Report Type!"); 
-            return Ok(mapper.Map<List<ReportDto>>(reports));
+                return NotFound("No Reports For this Report Type!");
+            //return Ok(mapper.Map<List<ReportDto>>(reports));
+            return Ok(reports.Select(r => new
+            {
+                ReportId = r.ReportId,
+                Title = r.Title,
+                Description = r.Description,
+                Latitude = r.Latitude,
+                Longitude = r.Longitude,
+                Address = r.Address,
+                Status = r.Status,
+                CreatedAt = r.CreatedAt,
+                UpdatedAt = r.UpdatedAt,
+                ReportTypeName = r.ReportType.ReportTypeName,
+                GovernorateName = r.Governorate.Name,
+            }
+                ));
         }
 
 
@@ -221,9 +305,24 @@ namespace ReportingSystem.Controllers
 
 
 
+            return Ok(reports.Select(r => new
+            {
+                ReportId=r.ReportId,
+                Title=r.Title,
+                Description=r.Description,
+                Latitude=r.Latitude,
+                Longitude=r.Longitude,
+                Address=r.Address,
+                Status=r.Status,
+                CreatedAt=r.CreatedAt,
+                UpdatedAt=r.UpdatedAt,
+                ReportTypeName=r.ReportType.ReportTypeName,
+                GovernorateName=r.Governorate.Name,
+            }
+                )
+                );
 
-
-            return Ok(mapper.Map<List<ReportDto>>(reports));
+            //return Ok(mapper.Map<List<ReportDto>>(reports));
         }
 
 
@@ -243,7 +342,7 @@ namespace ReportingSystem.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (String.IsNullOrEmpty(userId))
-                return Unauthorized();
+                return Unauthorized("Authentication is required. Please log in again.");
             Report report=await reportRepository.GetByIdAsync(ReportId);
             if (report==null)
                 return NotFound("Report Not Found!");
@@ -260,6 +359,19 @@ namespace ReportingSystem.Controllers
                     return Forbid("You cannot update this report because it does not belong to you");
 
             }
+
+            if (User.IsInRole("Employee"))
+            {
+                var employee=await employeeRepository.GetByUserIDAsync(userId);
+                if(employee==null)
+                    return Forbid("You do not have permission to access this resource.");
+                if (report.ReportType.DepartmentId!=employee.DepartmentId)
+                    return Forbid("Employees can only perform actions on their own department.");
+            }
+
+
+
+
 
             report=await reportRepository.UpdateAsync(report);
             return Ok(mapper.Map<ReportDto>(report));
@@ -338,7 +450,7 @@ namespace ReportingSystem.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
-                return Unauthorized();
+                return Unauthorized("Authentication is required. Please log in again.");
             var employee=await employeeRepository.GetByUserIDAsync(userId);
             if(employee==null)
                 return NotFound("Employee Not Found!!");
@@ -421,7 +533,7 @@ namespace ReportingSystem.Controllers
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
-                return Unauthorized();
+                return Unauthorized("Authentication is required. Please log in again.");
             var employee = await employeeRepository.GetByUserIDAsync(userId);
             if (employee == null)
                 return NotFound("Employee Not Found!!");

@@ -12,5 +12,6 @@ namespace ReportingSystem.Repositories.Interface
         Task<Employee?> GetByUserIDAsync(string userId);
         Task<Employee?> UpdateAsync(Employee employee);
         Task<bool> DeleteAsync(Guid id);
+
     }
 }
